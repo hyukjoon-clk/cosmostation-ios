@@ -255,6 +255,7 @@ extension SettingsVC: UITableViewDelegate, UITableViewDataSource {
             if (indexPath.row == 0) {
                 let accountListVC = AccountListVC(nibName: "AccountListVC", bundle: nil)
                 accountListVC.hidesBottomBarWhenPushed = true
+                accountListVC.purpose = .normal
                 self.navigationItem.title = ""
                 self.navigationController?.pushViewController(accountListVC, animated: true)
                 
