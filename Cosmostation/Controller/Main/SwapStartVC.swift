@@ -510,14 +510,14 @@ class SwapStartVC: BaseVC, UITextFieldDelegate {
     func getAffiliate(_ venue: JSON) -> JSON? {
         let fee = inputChain.getSkipAffiliate()
         var affiliate = JSON()
-        affiliate["osmosis-1"] = ["affiliates" : [ ["address" : "osmo1clpqr4nrk4khgkxj78fcwwh6dl3uw4epasmvnj", "basis_points_fee" : fee]]]
-        affiliate["neutron-1"] = ["affiliates" : [ ["address" : "neutron1clpqr4nrk4khgkxj78fcwwh6dl3uw4ep35p7l8", "basis_points_fee" : fee]]]
-        affiliate["phoenix-1"] = ["affiliates" : [ ["address" : "terra1564j3fq8p8np4yhh4lytnftz33japc03wuejxm", "basis_points_fee" : fee]]]
-        affiliate["columbus-5"] = ["affiliates" : [ ["address" : "terra1564j3fq8p8np4yhh4lytnftz33japc03wuejxm", "basis_points_fee" : fee]]]
-        affiliate["pacific-1"] = ["affiliates" : [ ["address" : "sei1hnkkqnzwmyw652muh6wfea7xlfgplnyj3edm09", "basis_points_fee" : fee]]]
-        affiliate["injective-1"] = ["affiliates" : [ ["address" : "inj1rvqzf9u2uxttmshn302anlknfgsatrh5mcu6la", "basis_points_fee" : fee]]]
-        affiliate["chihuahua-1"] = ["affiliates" : [ ["address" : "chihuahua1tgcypttehx3afugys6eq28h0kpmswfkgcuewfw", "basis_points_fee" : fee]]]
-        affiliate["core-1"] = ["affiliates" : [ ["address" : "persistence1rq598kexpsdmhxq63qq74v3tf22u6yvl2a47xk", "basis_points_fee" : fee]]]
+        affiliate["osmosis-1"] = ["affiliates" : [ ["address" : "osmo1vyu2x7c6etccq06rzz6mvadtemymtrqktsezem", "basis_points_fee" : fee]]]
+        affiliate["neutron-1"] = ["affiliates" : [ ["address" : "neutron1vyu2x7c6etccq06rzz6mvadtemymtrqk85rs4w", "basis_points_fee" : fee]]]
+        affiliate["phoenix-1"] = ["affiliates" : [ ["address" : "terra10x2urdmg3ns0e0yxs0h9ht29f5vwcxf3w95wqt", "basis_points_fee" : fee]]]
+        affiliate["columbus-5"] = ["affiliates" : [ ["address" : "terra10x2urdmg3ns0e0yxs0h9ht29f5vwcxf3w95wqt", "basis_points_fee" : fee]]]
+        affiliate["pacific-1"] = ["affiliates" : [ ["address" : "sei1dc0vsyspzq4xr6ylwaj9jq6wkkzcmgayv05ys0", "basis_points_fee" : fee]]]
+        affiliate["injective-1"] = ["affiliates" : [ ["address" : "inj1es923y69fl9ym4ga9kxmlxhtevvyvd6hncsg7e", "basis_points_fee" : fee]]]
+        affiliate["chihuahua-1"] = ["affiliates" : [ ["address" : "chihuahua1vyu2x7c6etccq06rzz6mvadtemymtrqkq78uwt", "basis_points_fee" : fee]]]
+        affiliate["core-1"] = ["affiliates" : [ ["address" : "persistence1vyu2x7c6etccq06rzz6mvadtemymtrqkd8vppd", "basis_points_fee" : fee]]]
         return affiliate
     }
     
