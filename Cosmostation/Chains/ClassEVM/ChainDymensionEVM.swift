@@ -20,12 +20,12 @@ class ChainDymensionEVM: BaseChain  {
         accountKeyType = AccountKeyType(.ETH_Keccak256, "m/44'/60'/0'/0/X")
         
         
-        cosmosEndPointType = .UseLCD
+        cosmosEndPointType = .UseGRPC
         stakeDenom = "adym"
         bechAccountPrefix = "dym"
         validatorPrefix = "dymvaloper"
-        grpcHost = ""
-        lcdUrl = "https://m-dymension.api.utsa.tech/"
+        grpcHost = "grpc-dymension.mainnet.cosmoslabs.kr"
+        lcdUrl = "https://lcd-dymension.mainnet.cosmoslabs.kr/"
         
         supportEvm = true
         coinSymbol = "DYM"
