@@ -146,10 +146,7 @@ class BaseSheet: BaseVC, UISearchBarDelegate {
         if (sheetType == .SelectCreateAccount) {
             sheetTitle.text = NSLocalizedString("title_create_account", comment: "")
             
-        } else if (sheetType == .SelectOptionMnemonicAccount) {
-            sheetTitle.text = NSLocalizedString("title_select_options", comment: "")
-            
-        } else if (sheetType == .SelectOptionPrivateKeyAccount) {
+        } else if (sheetType == .SelectOptionMnemonicAccount || sheetType == .SelectOptionPrivateKeyAccount || sheetType == .SelectOptionNetworkErrorMnemonciAccount || sheetType == .SelectOptionNetworkErrorPrivateKeyAccount) {
             sheetTitle.text = NSLocalizedString("title_select_options", comment: "")
             
         } else if (sheetType == .SwitchAccount) {
@@ -441,6 +438,12 @@ extension BaseSheet: UITableViewDelegate, UITableViewDataSource {
         } else if (sheetType == .SelectOptionPrivateKeyAccount) {
             return 3
             
+        } else if (sheetType == .SelectOptionNetworkErrorMnemonciAccount) {
+            return 2
+            
+        } else if (sheetType == .SelectOptionNetworkErrorPrivateKeyAccount) {
+            return 1
+            
         } else if (sheetType == .SwitchAccount) {
             return BaseData.instance.selectAccounts().count
             
@@ -591,7 +594,17 @@ extension BaseSheet: UITableViewDelegate, UITableViewDataSource {
             cell?.onBindPrivateKeyAccount(indexPath.row)
             return cell!
             
-        } else if (sheetType == .SwitchAccount) {
+        } else if (sheetType == .SelectOptionNetworkErrorMnemonciAccount) {
+            let cell = tableView.dequeueReusableCell(withIdentifier:"BaseMsgSheetCell") as? BaseMsgSheetCell
+            cell?.onBindNetworkErrorMnemonicAccount(indexPath.row)
+            return cell!
+            
+        } else if (sheetType == .SelectOptionNetworkErrorPrivateKeyAccount) {
+            let cell = tableView.dequeueReusableCell(withIdentifier:"BaseMsgSheetCell") as? BaseMsgSheetCell
+            cell?.onBindNetworkErrorPrivateKeyAccount()
+            return cell!
+            
+        }  else if (sheetType == .SwitchAccount) {
             let cell = tableView.dequeueReusableCell(withIdentifier:"SwitchAccountCell") as? SwitchAccountCell
             cell?.onBindAccount(BaseData.instance.selectAccounts()[indexPath.row])
             return cell!
@@ -813,7 +826,7 @@ extension BaseSheet: UITableViewDelegate, UITableViewDataSource {
             let result: [String : Any] = ["index" : indexPath.row, "accountId" : BaseData.instance.selectAccounts()[indexPath.row].id]
             sheetDelegate?.onSelectedSheet(sheetType, result)
             
-        } else if (sheetType == .SelectOptionMnemonicAccount || sheetType == .SelectOptionPrivateKeyAccount) {
+        } else if (sheetType == .SelectOptionMnemonicAccount || sheetType == .SelectOptionPrivateKeyAccount || sheetType == .SelectOptionNetworkErrorMnemonciAccount || sheetType == .SelectOptionNetworkErrorPrivateKeyAccount) {
             let result: [String : Any] = ["index" : indexPath.row, "account" : selectedAccount]
             sheetDelegate?.onSelectedSheet(sheetType, result)
             
@@ -957,6 +970,8 @@ public enum SheetType: Int {
     case SelectCreateAccount = 0
     case SelectOptionMnemonicAccount = 1
     case SelectOptionPrivateKeyAccount = 2
+    case SelectOptionNetworkErrorMnemonciAccount = 3
+    case SelectOptionNetworkErrorPrivateKeyAccount = 4
     
     case SwitchAccount = 11
     case SwitchLanguage = 12
