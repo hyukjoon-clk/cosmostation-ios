@@ -54,7 +54,7 @@ class SettingsVC: BaseVC {
 extension SettingsVC: UITableViewDelegate, UITableViewDataSource {
     
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 4
+        return 3
     }
     
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
@@ -64,8 +64,6 @@ extension SettingsVC: UITableViewDelegate, UITableViewDataSource {
         } else if (section == 1) {
             view.titleLabel.text = NSLocalizedString("setting_section_general", comment: "")
         } else if (section == 2) {
-            view.titleLabel.text = NSLocalizedString("setting_section_support", comment: "")
-        } else if (section == 3) {
             view.titleLabel.text = NSLocalizedString("setting_section_about", comment: "")
         }
         view.cntLabel.text = ""
@@ -87,7 +85,7 @@ extension SettingsVC: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         if (indexPath.section == 1 && indexPath.row == 8) {
             return 0
-        } else if (indexPath.section == 3 && indexPath.row == 4 && !BaseData.instance.showEvenReview()) {
+        } else if (indexPath.section == 2 && indexPath.row == 2 && !BaseData.instance.showEvenReview()) {
             return 0
         }
         return UITableView.automaticDimension
@@ -99,9 +97,7 @@ extension SettingsVC: UITableViewDelegate, UITableViewDataSource {
         } else if (section == 1) {
             return 9
         } else if (section == 2) {
-            return 1
-        } else if (section == 3) {
-            return 2
+            return 3
         }
         return 0
     }
@@ -214,19 +210,14 @@ extension SettingsVC: UITableViewDelegate, UITableViewDataSource {
                 return baseCell
             }
             
-            
         } else if (indexPath.section == 2) {
             if (indexPath.row == 0) {
                 baseCell.onBindSetGuide()
                 return baseCell
-            }
-            
-        } else if (indexPath.section == 3) {
-            if (indexPath.row == 0) {
+            } else if (indexPath.row == 1) {
                 baseCell.onBindSetVersion()
                 return baseCell
-                
-            } else if (indexPath.row == 1) {
+            } else if (indexPath.row == 2) {
                 baseCell.onBindLabs()
                 return baseCell
             }
@@ -318,16 +309,14 @@ extension SettingsVC: UITableViewDelegate, UITableViewDataSource {
                     guard let url = URL(string: "https://www.stamper.network/guide-en.pdf") else { return }
                     onShowSafariWeb(url)
                 }
-            }
-            
-        } else if (indexPath.section == 3) {
-            if (indexPath.row == 0) {
+                
+            } else if (indexPath.row == 1) {
                 let urlAppStore = URL(string: "itms-apps://itunes.apple.com/app/id1459830339")
                 if (UIApplication.shared.canOpenURL(urlAppStore!)) {
                     UIApplication.shared.open(urlAppStore!, options: [:], completionHandler: nil)
                 }
                 
-            } else if (indexPath.row == 1) {
+            } else if (indexPath.row == 2) {
                 let labAlert = UIAlertController(title: "Lab", message: nil, preferredStyle: .alert)
                 labAlert.addTextField { (textField) in
                     textField.placeholder = "insert"

@@ -29,6 +29,6 @@ class ChainDymensionEVM: BaseChain  {
         
         supportEvm = true
         coinSymbol = "DYM"
-        evmRpcURL = "https://dymension.drpc.org"
+        evmRpcURL = "https://dymension.api.onfinality.io/public"
     }
 }

@@ -706,42 +706,42 @@ extension DappDetailVC: WKScriptMessageHandler {
                 
             }
             
-            //Handle SUI Request
-            else if (method == "sui_getAccount") {
-                onInitChainSui()
-                guard let pubKey = suiTargetChain!.publicKey?.hexEncodedString() else { return }
-                let data: JSON = ["address": suiTargetChain!.mainAddress, "publicKey": "0x" + pubKey]
-                injectionRequestApprove(data, messageJSON, bodyJSON["messageId"])
-                
-            } else if (method == "sui_getChain") {
-                injectionRequestApprove("mainnet", messageJSON, bodyJSON["messageId"])
-                
-            } else if (method == "sui_basicParam") {
-                onInitChainSui()
-                let data: JSON = ["rpc": (suiTargetChain as? ChainSui)?.getSuiFetcher()?.getSuiRpc() ?? "", "address": suiTargetChain!.mainAddress]
-                injectionRequestApprove(data, messageJSON, bodyJSON["messageId"])
-                
-            } else if (method == "sui_signTransactionBlock") || (method == "sui_signTransaction") {  // v1 || v2
-                let toSign = messageJSON["params"]
-                let hex = toSign["buildHexString"].stringValue
-                self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], Data(hex: hex).base64EncodedString())
-
-            } else if (method == "sui_signAndExecuteTransactionBlock") || (method == "sui_signAndExecuteTransaction") {  // v1 || v2
-                let toSign = messageJSON["params"]
-                let hex = toSign["buildHexString"].stringValue
-                self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], Data(hex: hex).base64EncodedString())
-                
-            } else if (method == "sui_signMessage") || (method == "sui_signPersonalMessage") {  // v1 || v2
-                Task {
-                    let toSign = messageJSON["params"]
-                    guard toSign["accountAddress"].stringValue.lowercased() == self.suiTargetChain!.mainAddress.lowercased() else {
-                        self.injectionRequestReject("Wrong address", messageJSON, bodyJSON["messageId"])
-                        return
-                    }
-                    let hex = toSign["message"].stringValue
-                    self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], Data(hex: hex).base64EncodedString())
-                }
-            }
+//            //Handle SUI Request
+//            else if (method == "sui_getAccount") {
+//                onInitChainSui()
+//                guard let pubKey = suiTargetChain!.publicKey?.hexEncodedString() else { return }
+//                let data: JSON = ["address": suiTargetChain!.mainAddress, "publicKey": "0x" + pubKey]
+//                injectionRequestApprove(data, messageJSON, bodyJSON["messageId"])
+//                
+//            } else if (method == "sui_getChain") {
+//                injectionRequestApprove("mainnet", messageJSON, bodyJSON["messageId"])
+//                
+//            } else if (method == "sui_basicParam") {
+//                onInitChainSui()
+//                let data: JSON = ["rpc": (suiTargetChain as? ChainSui)?.getSuiFetcher()?.getSuiRpc() ?? "", "address": suiTargetChain!.mainAddress]
+//                injectionRequestApprove(data, messageJSON, bodyJSON["messageId"])
+//                
+//            } else if (method == "sui_signTransactionBlock") || (method == "sui_signTransaction") {  // v1 || v2
+//                let toSign = messageJSON["params"]
+//                let hex = toSign["buildHexString"].stringValue
+//                self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], Data(hex: hex).base64EncodedString())
+//
+//            } else if (method == "sui_signAndExecuteTransactionBlock") || (method == "sui_signAndExecuteTransaction") {  // v1 || v2
+//                let toSign = messageJSON["params"]
+//                let hex = toSign["buildHexString"].stringValue
+//                self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], Data(hex: hex).base64EncodedString())
+//                
+//            } else if (method == "sui_signMessage") || (method == "sui_signPersonalMessage") {  // v1 || v2
+//                Task {
+//                    let toSign = messageJSON["params"]
+//                    guard toSign["accountAddress"].stringValue.lowercased() == self.suiTargetChain!.mainAddress.lowercased() else {
+//                        self.injectionRequestReject("Wrong address", messageJSON, bodyJSON["messageId"])
+//                        return
+//                    }
+//                    let hex = toSign["message"].stringValue
+//                    self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], Data(hex: hex).base64EncodedString())
+//                }
+//            }
             
             //Handle BTC Request
             else if (method == "bit_requestAccount") {
