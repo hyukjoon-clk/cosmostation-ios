@@ -97,12 +97,6 @@ class AboutStakingCell: UITableViewCell {
         }
         
         unbondingTimeLabel.text = NSLocalizedString("str_instant", comment: "")
-        
-        if let apy = suiChain.suiFetcher?.suiApys[0]["apy"].stringValue {
-            let nf = WUtils.getNumberFormatter(2)
-            let formatApr = nf.string(from: NSDecimalNumber(string: apy).multiplying(byPowerOf10: 2))!
-            stakingAprLabel.attributedText = WUtils.getDpAttributedString(formatApr, 2, stakingAprLabel.font)
-        }
     }
     func onBindIotaStakingInfo(_ iotaChain: ChainIota, _ json: JSON) {
         if let symbol = json["params"]["chainlist_params"]["staking_asset_symbol"].string, iotaChain.isStakeEnabled() {

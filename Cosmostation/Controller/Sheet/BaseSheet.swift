@@ -57,8 +57,8 @@ class BaseSheet: BaseVC, UISearchBarDelegate {
     var cdpType: String?
     var earnCoin: Cosmos_Base_V1beta1_Coin?
     
-    var suiValidators = [JSON]()
-    var suiValidatorsSearch = [JSON]()
+    var suiValidators = [Sui_Rpc_V2_Validator]()
+    var suiValidatorsSearch = [Sui_Rpc_V2_Validator]()
     
     var iotaValidators = [JSON]()
     var iotaValidatorsSearch = [JSON]()
@@ -362,7 +362,7 @@ class BaseSheet: BaseVC, UISearchBarDelegate {
             }
         } else if (sheetType == .SelectSuiValidator) {
             suiValidatorsSearch = searchText.isEmpty ? suiValidators : suiValidators.filter { validator in
-                return validator.suiValidatorName().range(of: searchText, options: .caseInsensitive, range: nil, locale: nil) != nil
+                return validator.name.range(of: searchText, options: .caseInsensitive, range: nil, locale: nil) != nil
             }
         } else if (sheetType == .SelectIotaValidator) {
             iotaValidatorsSearch = searchText.isEmpty ? iotaValidators : iotaValidators.filter { validator in
@@ -892,7 +892,7 @@ extension BaseSheet: UITableViewDelegate, UITableViewDataSource {
             sheetDelegate?.onSelectedSheet(sheetType, result)
             
         } else if (sheetType == .SelectSuiValidator) {
-            let result: [String : Any] = ["index" : indexPath.row, "suiAddress" : suiValidatorsSearch[indexPath.row]["suiAddress"].stringValue]
+            let result: [String : Any] = ["index" : indexPath.row, "suiAddress" : suiValidatorsSearch[indexPath.row].address]
             sheetDelegate?.onSelectedSheet(sheetType, result)
             
         } else if (sheetType == .SelectIotaValidator) {

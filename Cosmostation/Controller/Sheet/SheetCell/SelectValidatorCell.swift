@@ -103,11 +103,13 @@ class SelectValidatorCell: UITableViewCell {
     }
     
     
-    func onBindSuiValidator(_ baseChain: BaseChain, _ validator: JSON) {
-        logoImg.sd_setImage(with: validator.suiValidatorImg(), placeholderImage: UIImage(named: "iconValidatorDefault"))
-        nameLabel.text = validator.suiValidatorName()
-        vpLabel?.attributedText = WDP.dpAmount(validator.suiValidatorVp().stringValue, vpLabel!.font, 0)
-        commLabel?.attributedText = WDP.dpAmount(validator.suiValidatorCommission().stringValue, commLabel!.font, 2)
+    func onBindSuiValidator(_ baseChain: BaseChain, _ validator: Sui_Rpc_V2_Validator) {
+        logoImg.sd_setImage(with: URL(string: validator.imageURL), placeholderImage: UIImage(named: "iconValidatorDefault"))
+        nameLabel.text = validator.name
+        let vp = NSDecimalNumber(value: validator.stakingPool.suiBalance).multiplying(byPowerOf10: -9, withBehavior: handler0Down)
+        vpLabel?.attributedText = WDP.dpAmount(vp.stringValue, vpLabel!.font, 0)
+        let commission = NSDecimalNumber(value: validator.commissionRate).multiplying(byPowerOf10: -2, withBehavior: handler2Down)
+        commLabel?.attributedText = WDP.dpAmount(commission.stringValue, commLabel!.font, 2)
         
         vpTitle.isHidden = false
         vpLabel.isHidden = false

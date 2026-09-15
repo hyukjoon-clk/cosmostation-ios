@@ -161,27 +161,27 @@ class DappSuiSignRequestSheet: BaseVC {
         guard let suiFetcher = (selectedChain as? ChainSui)?.getSuiFetcher() else { return }
         
         do {
-            if let response = try await suiFetcher.suiDryrun(bytes) {
-                if let error = response["error"]["message"].string {
-                    print("fetching error: \(error)")
-                    DispatchQueue.main.async {
-                        self.dismissWithFail()
-                    }
-                    return
-                }
-                
-                suiFeeBudget = {
-                    let gasUsed = response["result"]["effects"]["gasUsed"]
-                    let storageCost = gasUsed["storageCost"].intValue - gasUsed["storageRebate"].intValue
-                    let cost = gasUsed["computationCost"].intValue + (storageCost > 0 ? storageCost : 0)
-                    return NSDecimalNumber(value: cost)
-                }()
-                
-                onUpdateFeeView()
-                
-                let gasData = response["result"]["input"]["gasData"]
-                displayToSign!["gasData"] = gasData
-            }
+//            if let response = try await suiFetcher.suiDryrun(bytes) {
+//                if let error = response["error"]["message"].string {
+//                    print("fetching error: \(error)")
+//                    DispatchQueue.main.async {
+//                        self.dismissWithFail()
+//                    }
+//                    return
+//                }
+//                
+//                suiFeeBudget = {
+//                    let gasUsed = response["result"]["effects"]["gasUsed"]
+//                    let storageCost = gasUsed["storageCost"].intValue - gasUsed["storageRebate"].intValue
+//                    let cost = gasUsed["computationCost"].intValue + (storageCost > 0 ? storageCost : 0)
+//                    return NSDecimalNumber(value: cost)
+//                }()
+//                
+//                onUpdateFeeView()
+//                
+//                let gasData = response["result"]["input"]["gasData"]
+//                displayToSign!["gasData"] = gasData
+//            }
             
         } catch {
             print("fetching error: \(error)")
@@ -284,15 +284,15 @@ class DappSuiSignRequestSheet: BaseVC {
             
         } else if method == "sui_signAndExecuteTransaction" || method == "sui_signAndExecuteTransactionBlock" {
             guard let suiFetcher = (selectedChain as? ChainSui)?.getSuiFetcher() else { return }
-            Task {
-                let options = requestToSign!["options"]
-                if let data = try await suiFetcher.suiExecuteTx(self.bytes, Signer.moveSignatures(selectedChain, bytes), options) {
-                    webSignDelegate?.onAcceptInjection(data["result"], requestToSign!, messageId!)
-                    
-                } else {
-                    webSignDelegate?.onCancleInjection("Fail suiExecuteTx request", requestToSign!, messageId!)
-                }
-            }
+//            Task {
+//                let options = requestToSign!["options"]
+//                if let data = try await suiFetcher.suiExecuteTx(self.bytes, Signer.moveSignatures(selectedChain, bytes), options) {
+//                    webSignDelegate?.onAcceptInjection(data["result"], requestToSign!, messageId!)
+//                    
+//                } else {
+//                    webSignDelegate?.onCancleInjection("Fail suiExecuteTx request", requestToSign!, messageId!)
+//                }
+//            }
             
         } else if (method == "sui_signMessage" || method == "sui_signPersonalMessage") {
             guard let messageBytes = requestToSign?["message"].stringValue else { return }

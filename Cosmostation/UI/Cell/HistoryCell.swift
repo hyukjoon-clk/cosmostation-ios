@@ -256,9 +256,9 @@ class HistoryCell: UITableViewCell {
                 WDP.dpCoin(msAsset, NSDecimalNumber(value: intAmount), nil, denomLabel, amountLabel, msAsset.decimals)
                 
             } else if let metaData = suiFetcher.suiCoinMeta[symbol] {
-                denomLabel.text = metaData["symbol"].stringValue
-                let dpAmount = NSDecimalNumber(value: intAmount).multiplying(byPowerOf10: -metaData["decimals"].int16Value, withBehavior: handler18Down)
-                amountLabel.attributedText = WDP.dpAmount(dpAmount.stringValue, amountLabel!.font, 9)
+//                denomLabel.text = metaData["symbol"].stringValue
+//                let dpAmount = NSDecimalNumber(value: intAmount).multiplying(byPowerOf10: -metaData["decimals"].int16Value, withBehavior: handler18Down)
+//                amountLabel.attributedText = WDP.dpAmount(dpAmount.stringValue, amountLabel!.font, 9)
                 
             } else {
                 denomLabel.text = symbol.suiCoinSymbol()

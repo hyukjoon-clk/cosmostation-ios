@@ -44,7 +44,7 @@ class MajorNftVC: BaseVC {
         collectionView.refreshControl = refresher
         
         if let suiFetcher = (selectedChain as? ChainSui)?.getSuiFetcher() {
-            NFTs = suiFetcher.allNfts()
+//            NFTs = suiFetcher.allNfts()
         } else if let iotaFetcher = (selectedChain as? ChainIota)?.getIotaFetcher() {
             NFTs = iotaFetcher.allNfts()
         }
@@ -76,7 +76,7 @@ class MajorNftVC: BaseVC {
         let tag = notification.object as! String
         if (selectedChain != nil && selectedChain.tag == tag ) {
             if let suiFetcher = (selectedChain as? ChainSui)?.getSuiFetcher() {
-                NFTs = suiFetcher.allNfts()
+//                NFTs = suiFetcher.allNfts()
             } else if let iotaFetcher = (selectedChain as? ChainIota)?.getIotaFetcher() {
                 NFTs = iotaFetcher.allNfts()
             }

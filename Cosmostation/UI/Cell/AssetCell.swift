@@ -164,9 +164,9 @@ class AssetCell: UITableViewCell {
                 WDP.dpPriceChanged(msAsset, priceChangeLabel, priceChangePercentLabel)
                 
             } else if let metaData = suiFetcher.suiCoinMeta[balance.0] {
-                coinImg.sd_setImage(with: metaData.assetImg(), placeholderImage: UIImage(named: "tokenDefault"))
-                symbolLabel.text = metaData["symbol"].stringValue
-                let dpAmount = balance.1.multiplying(byPowerOf10: -metaData["decimals"].int16Value, withBehavior: handler18Down)
+                coinImg.sd_setImage(with: URL(string: metaData?.iconURL ?? ""), placeholderImage: UIImage(named: "tokenDefault"))
+                symbolLabel.text = metaData?.symbol
+                let dpAmount = balance.1.multiplying(byPowerOf10: -Int16(metaData?.decimals ?? 9), withBehavior: handler18Down)
                 amountLabel.attributedText = WDP.dpAmount(dpAmount.stringValue, amountLabel!.font, 6)
                 
             } else {

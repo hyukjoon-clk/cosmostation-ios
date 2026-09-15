@@ -74,12 +74,10 @@ class NftTransfer: BaseVC {
     var toSendSuiNFT: JSON!
     var suiFetcher: SuiFetcher!
     var suiFeeBudget = NSDecimalNumber.zero
-    var suiGasPrice = NSDecimalNumber.zero
     
     var toSendIotaNFT: JSON!
     var iotaFetcher: IotaFetcher!
     var iotaFeeBudget = NSDecimalNumber.zero
-    var iotaGasPrice = NSDecimalNumber.zero
 
 
     override func viewDidLoad() {
@@ -109,13 +107,11 @@ class NftTransfer: BaseVC {
                 sendType = .SUI_NFT
                 txStyle = .SUI_STYLE
                 suiFetcher = suiChain.getSuiFetcher()
-                suiGasPrice = try await suiFetcher.fetchGasprice()
                 
             } else if let iotaChain = fromChain as? ChainIota {
                 sendType = .IOTA_NFT
                 txStyle = .IOTA_STYLE
                 iotaFetcher = iotaChain.getIotaFetcher()
-                iotaGasPrice = try await iotaFetcher.fetchGasprice()
             }
             
             DispatchQueue.main.async {
@@ -429,56 +425,56 @@ extension NftTransfer {
     
     func suiNftSendGasCheck() {
         Task {
-            if let txBytes = try await suiFetcher.unsafeTransferObject(fromChain.mainAddress, toSendSuiNFT["objectId"].stringValue, suiFeeBudget.stringValue, toAddress),
-               let response = try await suiFetcher.suiDryrun(txBytes) {
-                if let error = response["error"]["message"].string {
-                    DispatchQueue.main.async {
-                        self.onUpdateWithSimul(nil, error)
-                    }
-                    return
-                }
-                
-                let computationCost = NSDecimalNumber(string: response["result"]["effects"]["gasUsed"]["computationCost"].stringValue)
-                let storageCost = NSDecimalNumber(string: response["result"]["effects"]["gasUsed"]["storageCost"].stringValue)
-                let storageRebate = NSDecimalNumber(string: response["result"]["effects"]["gasUsed"]["storageRebate"].stringValue)
-                
-                var gasCost: UInt64 = 0
-                if (storageCost.compare(storageRebate).rawValue > 0) {
-                    gasCost = computationCost.adding(storageCost).subtracting(storageRebate).multiplying(by: NSDecimalNumber(string: "1.3") , withBehavior: handler0Down).uint64Value
-                } else {
-                    gasCost = computationCost.multiplying(by: NSDecimalNumber(string: "1.3") , withBehavior: handler0Down).uint64Value
-                }
-                DispatchQueue.main.async {
-                    self.onUpdateWithSimul(gasCost)
-                }
-                
-            } else {
-                DispatchQueue.main.async {
-                    self.onUpdateWithSimul(nil)
-                }
-            }
+//            if let txBytes = try await suiFetcher.unsafeTransferObject(fromChain.mainAddress, toSendSuiNFT["objectId"].stringValue, suiFeeBudget.stringValue, toAddress),
+//               let response = try await suiFetcher.suiDryrun(txBytes) {
+//                if let error = response["error"]["message"].string {
+//                    DispatchQueue.main.async {
+//                        self.onUpdateWithSimul(nil, error)
+//                    }
+//                    return
+//                }
+//                
+//                let computationCost = NSDecimalNumber(string: response["result"]["effects"]["gasUsed"]["computationCost"].stringValue)
+//                let storageCost = NSDecimalNumber(string: response["result"]["effects"]["gasUsed"]["storageCost"].stringValue)
+//                let storageRebate = NSDecimalNumber(string: response["result"]["effects"]["gasUsed"]["storageRebate"].stringValue)
+//                
+//                var gasCost: UInt64 = 0
+//                if (storageCost.compare(storageRebate).rawValue > 0) {
+//                    gasCost = computationCost.adding(storageCost).subtracting(storageRebate).multiplying(by: NSDecimalNumber(string: "1.3") , withBehavior: handler0Down).uint64Value
+//                } else {
+//                    gasCost = computationCost.multiplying(by: NSDecimalNumber(string: "1.3") , withBehavior: handler0Down).uint64Value
+//                }
+//                DispatchQueue.main.async {
+//                    self.onUpdateWithSimul(gasCost)
+//                }
+//                
+//            } else {
+//                DispatchQueue.main.async {
+//                    self.onUpdateWithSimul(nil)
+//                }
+//            }
         }
     }
     
     func suiNftSend() {
         Task {
             do {
-                if let txBytes = try await suiFetcher.unsafeTransferObject(fromChain.mainAddress, toSendSuiNFT["objectId"].stringValue, suiFeeBudget.stringValue, toAddress),
-                   let dryRes = try await suiFetcher.suiDryrun(txBytes), dryRes["error"].isEmpty,
-                   let broadRes = try await suiFetcher.suiExecuteTx(txBytes, Signer.moveSignatures(fromChain, txBytes), nil) {
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(1000), execute: {
-                        self.loadingView.isHidden = true
-                        let txResult = CommonTransferResult(nibName: "CommonTransferResult", bundle: nil)
-                        txResult.txStyle = self.txStyle
-                        txResult.fromChain = self.fromChain
-                        txResult.toChain = self.toChain
-                        txResult.toAddress = self.toAddress
-                        txResult.suiResult = broadRes
-                        txResult.modalPresentationStyle = .fullScreen
-                        self.present(txResult, animated: true)
-                    })
-                }
+//                if let txBytes = try await suiFetcher.unsafeTransferObject(fromChain.mainAddress, toSendSuiNFT["objectId"].stringValue, suiFeeBudget.stringValue, toAddress),
+//                   let dryRes = try await suiFetcher.suiDryrun(txBytes), dryRes["error"].isEmpty,
+//                   let broadRes = try await suiFetcher.suiExecuteTx(txBytes, Signer.moveSignatures(fromChain, txBytes), nil) {
+//                    
+//                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(1000), execute: {
+//                        self.loadingView.isHidden = true
+//                        let txResult = CommonTransferResult(nibName: "CommonTransferResult", bundle: nil)
+//                        txResult.txStyle = self.txStyle
+//                        txResult.fromChain = self.fromChain
+//                        txResult.toChain = self.toChain
+//                        txResult.toAddress = self.toAddress
+//                        txResult.suiResult = broadRes
+//                        txResult.modalPresentationStyle = .fullScreen
+//                        self.present(txResult, animated: true)
+//                    })
+//                }
                 
             } catch {
                 //TODO handle Error
