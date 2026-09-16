@@ -409,23 +409,22 @@ extension SuiFetcher {
         return (connection["nodes"].arrayValue, nextCursor)
     }
     
-    func unsafeTransferObject(_ sender: String, _ objectId: String, _ gasBudget: String, _ recipients: String) async throws -> String? {
-        let params: Any = [sender, objectId, NSNull(),  gasBudget, recipients]
-        let parameters: Parameters = ["method": "unsafe_transferObject", "params": params, "id" : 1, "jsonrpc" : "2.0"]
-        return try? await AF.request(getSuiRpc(), method: .post, parameters: parameters, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value["result"]["txBytes"].stringValue
-    }
-    
-    func suiDryrun(_ tx_bytes: String) async throws -> Sui_Rpc_V2_TransactionEffects? {
+    func suiSimulate(_ tx_bytes: String) async throws -> Sui_Rpc_V2_ExecutedTransaction? {
         guard let txData = Data(base64Encoded: tx_bytes) else { return nil }
-        
+
         let req = Sui_Rpc_V2_SimulateTransactionRequest.with {
             $0.transaction = Sui_Rpc_V2_Transaction.with {
                 $0.bcs = Sui_Rpc_V2_Bcs.with { $0.value = txData }
             }
-            $0.readMask = Google_Protobuf_FieldMask(protoPaths: ["transaction.effects"])
+            $0.readMask = Google_Protobuf_FieldMask(protoPaths: ["transaction.effects", "transaction.transaction"])
+            $0.doGasSelection = true
         }
         let response = try await Sui_Rpc_V2_TransactionExecutionServiceNIOClient(channel: getClient()).simulateTransaction(req, callOptions: getCallOptions()).response.get()
-        return response.transaction.effects
+        return response.transaction
+    }
+    
+    func suiDryrun(_ tx_bytes: String) async throws -> Sui_Rpc_V2_TransactionEffects? {
+        return try await suiSimulate(tx_bytes)?.effects
     }
     
     func suiExecuteTx(_ tx_bytes: String, _ signatures: [String], _ options: JSON?) async throws -> Sui_Rpc_V2_ExecutedTransaction? {
@@ -441,7 +440,7 @@ extension SuiFetcher {
                     $0.bcs = Sui_Rpc_V2_Bcs.with { $0.value = signatureData }
                 }
             }
-            $0.readMask = Google_Protobuf_FieldMask(protoPaths: ["effects", "digest"])
+            $0.readMask = Google_Protobuf_FieldMask(protoPaths: ["effects", "digest", "effects.bcs"])
         }
         
         var callOptions = CallOptions()
@@ -449,6 +448,22 @@ extension SuiFetcher {
         let response = try await Sui_Rpc_V2_TransactionExecutionServiceNIOClient(channel: getClient()).executeTransaction(req, callOptions: callOptions).response.get()
         return response.transaction
     }
+    
+//    func suiRawTransaction(_ txBytes: String, _ signatures: [String]) -> String? {
+//        guard let txData = Data(base64Encoded: txBytes) else { return nil }
+//
+//        var result = Data([0x01])
+//        result += Data([0x00, 0x00, 0x00])
+//        result += txData
+//        result += Data([UInt8(signatures.count)])
+//        signatures.forEach { signature in
+//            if let signatureData = Data(base64Encoded: signature) {
+//                result += Data(Signer.encodeULEB128(signatureData.count))
+//                result += signatureData
+//            }
+//        }
+//        return result.base64EncodedString()
+//    }
 }
 
 
@@ -579,6 +594,19 @@ extension SuiFetcher {
         let buildUnStakingTxHex = try await SuiJS.shared.callJSValue(key: "buildUnstakingRequest",
                                                                      param: [chain.mainAddress, gasPrice, gasBudget, coinData.objectID, String(coinData.version), coinData.digest, objectId, stakedObjectVersion, stakedObjectDigest])
         return Data(hex: buildUnStakingTxHex ?? "").base64EncodedString()
+    }
+    
+    func buildSendNftRequest(_ toAddress: String, _ nft: Sui_Rpc_V2_Object) async throws -> String? {
+        let gasPrice = referenceGasPrice()
+        guard let gasCoin = suixCoins() else { return "" }
+
+        let gasBudget = baseFee(.SUI_SEND_NFT)
+        let buildSendNftTxHex = try await SuiJS.shared.callJSValue(key: "buildSendSuiNFTRequest",
+                                                                  param: [chain.mainAddress, toAddress,
+                                                                          nft.objectID, String(nft.version), nft.digest,
+                                                                          gasPrice, gasBudget.stringValue,
+                                                                          gasCoin.objectID, String(gasCoin.version), gasCoin.digest])
+        return Data(hex: buildSendNftTxHex ?? "").base64EncodedString()
     }
 }
 
