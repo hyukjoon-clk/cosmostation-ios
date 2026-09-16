@@ -71,7 +71,7 @@ class NftTransfer: BaseVC {
     var cosmosTxTip: Cosmos_Tx_V1beta1_Tip?
     
     
-    var toSendSuiNFT: JSON!
+    var toSendSuiNFT: Sui_Rpc_V2_Object!
     var suiFetcher: SuiFetcher!
     var suiFeeBudget = NSDecimalNumber.zero
     
@@ -142,11 +142,11 @@ class NftTransfer: BaseVC {
     
     func onInitNft() {
         if (txStyle == .SUI_STYLE) {
-            if let url = toSendSuiNFT.suiNftULR() {
+            if let url = toSendSuiNFT.suiNftURL() {
                 toSendNftImage.sd_setImage(with: url, placeholderImage: UIImage(named: "imgNftPlaceHolder"))
             }
-            toSendNftName.text = toSendSuiNFT["display"]["data"]["name"].stringValue
-            toSendNftCollectionName.text = toSendSuiNFT["objectId"].stringValue
+            toSendNftName.text = toSendSuiNFT.suiNftName()
+            toSendNftCollectionName.text = toSendSuiNFT.objectID
             
         } else if (txStyle == .IOTA_STYLE) {
             if let url = toSendIotaNFT.iotaNftULR() {

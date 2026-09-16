@@ -174,3 +174,29 @@ query($tableId: SuiAddress!, $epochKey: Base64!) {
     }
 }
 """
+
+let SUI_HISTORY_QUERY = """
+  query($addr: SuiAddress!, $first: Int!, $after: String) {
+    transactions(first: $first, after: $after, filter: {affectedAddress: $addr}) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        digest
+        sender { address }
+        effects {
+          checkpoint { sequenceNumber }
+          status
+          timestamp
+          balanceChanges { nodes { owner { address } coinType { repr } amount } }
+          gasEffects { gasSummary { computationCost storageCost storageRebate } }
+        }
+        kind {
+          __typename
+          ... on ProgrammableTransaction {
+            inputs { nodes { __typename ... on MoveValue { type { repr } json } } }
+            commands { nodes { __typename ... on MoveCallCommand { function { name module { name } } } } }
+          }
+        }
+      }
+    }
+  }
+  """

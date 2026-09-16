@@ -22,7 +22,6 @@ class SuiFetcher {
     var suiStakedList = [SuiStakeReward]()
     var suiObjects = [Sui_Rpc_V2_Object]()
     var suiValidators = [Sui_Rpc_V2_Validator]()
-    var suiApys = [JSON]()
     var suiCoinMeta: [String: Sui_Rpc_V2_CoinMetadata?] = [:]
     var suiHistory = [JSON]()
     
@@ -35,11 +34,12 @@ class SuiFetcher {
     func fetchSuiBalances() async -> Bool {
         suiBalances.removeAll()
         if let balance = try? await fetchAllBalances(chain.mainAddress) {
-            balance?["result"].arrayValue.forEach({ balance in
-                let cointype = balance["coinType"].stringValue
-                let amount = NSDecimalNumber.init(string: balance["totalBalance"].stringValue)
-                suiBalances.append((cointype, amount))
+            balance?.forEach({ balance in
+                let coinType = balance.coinType.suiNormalizeType()
+                let amount = NSDecimalNumber.init(string: String(balance.balance))
+                suiBalances.append((coinType, amount))
             })
+            
             suiBalances.sort {
                 if ($0.0 == SUI_MAIN_DENOM) { return true }
                 if ($1.0 == SUI_MAIN_DENOM) { return false }
@@ -125,21 +125,14 @@ class SuiFetcher {
     func fetchSuiHistory() async {
         suiHistory.removeAll()
         
-        if let fromHistory = try? await fetchFromHistory(chain.mainAddress),
-           let toHistory = try? await fetchToHistory(chain.mainAddress) {
-            suiHistory.append(contentsOf: fromHistory ?? [])
-            toHistory?.forEach { to in
-                if (suiHistory.filter({ $0["digest"].stringValue == to["digest"].stringValue }).first == nil) {
-                    suiHistory.append(to)
-                }
-            }
+        if let (nodes, _) = try? await fetchHistory(chain.mainAddress, nil) {
+            suiHistory.append(contentsOf: nodes)
             suiHistory.sort {
-                return $0["checkpoint"].int64Value > $1["checkpoint"].int64Value
+                return $0["effects"]["checkpoint"]["sequenceNumber"].int64Value > $1["effects"]["checkpoint"]["sequenceNumber"].int64Value
             }
         }
         return
     }
-    
     
     func stakedAmount() -> NSDecimalNumber {
         return principalAmount().adding(estimatedRewardAmount())
@@ -228,13 +221,12 @@ class SuiFetcher {
     }
     
     //TODO check nft logic match with android & extension
-//    func allNfts() -> [JSON] {
-//        return suiObjects.filter { object in
-//            let typeS = object["type"].string?.lowercased()
-//            return (typeS?.contains("stakedsui") == false && typeS?.contains("coin") == false)
-//        }
-//    }
-    
+    func allNfts() -> [Sui_Rpc_V2_Object] {
+        return suiObjects.filter { object in
+            let typeS = object.objectType.lowercased()
+            return (typeS.contains("stakedsui") == false && typeS.contains("coin") == false)
+        }
+    }
     
     func hasFee(_ txType: TxType?) -> Bool {
         let suiBalance = balanceAmount(SUI_MAIN_DENOM)
@@ -286,7 +278,7 @@ class SuiFetcher {
         if let endpoint = UserDefaults.standard.string(forKey: KEY_CHAIN_RPC_ENDPOINT +  " : " + chain.name) {
             return endpoint.trimmingCharacters(in: .whitespaces)
         }
-        return chain.mainUrl
+        return chain.grpcHost
     }
     
     func buildPoolMap(_ systemState: Sui_Rpc_V2_SystemState?) -> [String: SuiPoolInfo] {
@@ -330,9 +322,12 @@ extension SuiFetcher {
         return response.epoch
     }
     
-    func fetchAllBalances(_ address: String) async throws -> JSON?  {
-        let parameters: Parameters = ["method": "suix_getAllBalances", "params": [address], "id" : 1, "jsonrpc" : "2.0"]
-        return try await AF.request(getSuiRpc(), method: .post, parameters: parameters, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value
+    func fetchAllBalances(_ address: String) async throws -> [Sui_Rpc_V2_Balance]?  {
+        let req = Sui_Rpc_V2_ListBalancesRequest.with {
+            $0.owner = address
+        }
+        let response = try await Sui_Rpc_V2_StateServiceNIOClient(channel: getClient()).listBalances(req, callOptions: getCallOptions()).response.get()
+        return response.balances
     }
     
     func fetchOwnedObjects(_ address: String, _ pageToken: Data?) async throws {
@@ -404,36 +399,14 @@ extension SuiFetcher {
         return response.metadata
     }
     
-    func fetchFromHistory(_ address: String) async throws -> [JSON]? {
-        let params: Any = [["filter": ["FromAddress": address], "options": ["showEffects": true, "showInput":true, "showBalanceChanges":true]], nil, 50, true]
-        let parameters: Parameters = ["method": "suix_queryTransactionBlocks", "params": params, "id" : 1, "jsonrpc" : "2.0"]
-        return try await AF.request(getSuiRpc(), method: .post, parameters: parameters, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value["result"]["data"].array
-    }
-    
-    func fetchToHistory(_ address: String) async throws -> [JSON]? {
-        let params: Any = [["filter": ["ToAddress": address], "options": ["showEffects": true, "showInput":true, "showBalanceChanges":true]], nil, 50, true]
-        let parameters: Parameters = ["method": "suix_queryTransactionBlocks", "params": params, "id" : 1, "jsonrpc" : "2.0"]
-        return try await AF.request(getSuiRpc(), method: .post, parameters: parameters, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value["result"]["data"].array
-    }
-    
-    
-    func unsafeCoinSend(_ sendDenom: String, _ sender: String, _ coins: [String], _ recipients: [String], _ amounts: [String], _ gasBudget: String) async throws -> String? {
-        if (sendDenom == SUI_MAIN_DENOM) {
-            return try await unsafePaySui(sender, coins, recipients, amounts, gasBudget)
-        }
-        return try await unsafePay(sender, coins, recipients, amounts, gasBudget)
-    }
-    
-    func unsafePaySui(_ sender: String, _ coins: [String], _ recipients: [String], _ amounts: [String], _ gasBudget: String) async throws -> String? {
-        let params: Any = [sender, coins,  recipients, amounts, gasBudget]
-        let parameters: Parameters = ["method": "unsafe_paySui", "params": params, "id" : 1, "jsonrpc" : "2.0"]
-        return try? await AF.request(getSuiRpc(), method: .post, parameters: parameters, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value["result"]["txBytes"].stringValue
-    }
-    
-    func unsafePay(_ sender: String, _ coins: [String], _ recipients: [String], _ amounts: [String], _ gasBudget: String) async throws -> String? {
-        let params: Any = [sender, coins,  recipients, amounts, NSNull(), gasBudget]
-        let parameters: Parameters = ["method": "unsafe_pay", "params": params, "id" : 1, "jsonrpc" : "2.0"]
-        return try? await AF.request(getSuiRpc(), method: .post, parameters: parameters, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value["result"]["txBytes"].stringValue
+    func fetchHistory(_ address: String, _ after: String?) async throws -> ([JSON], String?) {
+        let variables: [String: Any] = ["addr": address, "first": 50, "after": after ?? NSNull()]
+        let parameters: Parameters = ["query": SUI_HISTORY_QUERY, "variables": variables]
+        let response = try await AF.request(chain.mainUrl, method: .post, parameters: parameters, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value
+
+        let connection = response["data"]["transactions"]
+        let nextCursor = connection["pageInfo"]["hasNextPage"].boolValue ? connection["pageInfo"]["endCursor"].string : nil
+        return (connection["nodes"].arrayValue, nextCursor)
     }
     
     func unsafeTransferObject(_ sender: String, _ objectId: String, _ gasBudget: String, _ recipients: String) async throws -> String? {
@@ -521,6 +494,16 @@ extension String {
         }
         return nil
     }
+    
+    func suiTimestampMs() -> Int {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: self) { return Int(date.timeIntervalSince1970 * 1000) }
+
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: self) { return Int(date.timeIntervalSince1970 * 1000) }
+        return 0
+    }
 }
 
 
@@ -547,6 +530,25 @@ extension SuiFetcher {
         return suiObjects.first { $0.objectType.suiCoinType() == SUI_MAIN_DENOM }
     }
     
+    func buildSendRequest(_ toAddress: String, _ amount: String, _ toSendDenom: String, _ coins: [Sui_Rpc_V2_Object]?) async throws -> String? {
+        let gasPrice = referenceGasPrice()
+        guard let gasCoin = suixCoins() else { return "" }
+
+        let gasBudget = baseFee(.SUI_SEND_COIN)
+        let coinsParam: [[String: Any]] = (coins ?? []).map { coin in
+            return ["coinType": coin.objectType.suiCoinType() ?? "",
+                    "coinObjectId": coin.objectID,
+                    "version": String(coin.version),
+                    "digest": coin.digest]
+        }
+
+        let buildSendTxHex = try await SuiJS.shared.callJSValue(key: "buildSendSuiRequest",
+                                                               param: [amount, chain.mainAddress, toAddress, coinsParam, toSendDenom,
+                                                                       gasPrice, gasBudget.stringValue,
+                                                                       gasCoin.objectID, String(gasCoin.version), gasCoin.digest])
+        return Data(hex: buildSendTxHex ?? "").base64EncodedString()
+    }
+    
     func buildStakingRequest(_ toAmount: String, _ validatorAddress: String) async throws -> String? {
         let gasPrice = referenceGasPrice()
         guard let coinData = suixCoins() else { return "" }
@@ -554,7 +556,7 @@ extension SuiFetcher {
         let gasBudget = baseFee(.SUI_STAKE)
         let buildStakingTxHex = try await SuiJS.shared.callJSValue(key: "buildStakingRequest",
                                                                    param: [toAmount, validatorAddress, chain.mainAddress, gasPrice, gasBudget, coinData.objectID, String(coinData.version), coinData.digest])
-            return Data(hex: buildStakingTxHex ?? "").base64EncodedString()
+        return Data(hex: buildStakingTxHex ?? "").base64EncodedString()
     }
     
     func fetchSuiObject(_ objectId: String) async throws -> Sui_Rpc_V2_Object {
@@ -577,6 +579,13 @@ extension SuiFetcher {
         let buildUnStakingTxHex = try await SuiJS.shared.callJSValue(key: "buildUnstakingRequest",
                                                                      param: [chain.mainAddress, gasPrice, gasBudget, coinData.objectID, String(coinData.version), coinData.digest, objectId, stakedObjectVersion, stakedObjectDigest])
         return Data(hex: buildUnStakingTxHex ?? "").base64EncodedString()
+    }
+}
+
+extension Google_Protobuf_Value {
+    func suiStringField(_ key: String) -> String? {
+        guard let value = structValue.fields[key]?.stringValue, !value.isEmpty else { return nil }
+        return value
     }
 }
 

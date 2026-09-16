@@ -1479,56 +1479,56 @@ extension CommonTransfer {
     
     func suiSendGasCheck() {
         Task {
-//            if let txBytes = try await suiFetcher.unsafeCoinSend(toSendDenom, fromChain.mainAddress, suiInputs(), [toAddress], [toAmount.stringValue], suiFeeBudget.stringValue),
-//               let response = try await suiFetcher.suiDryrun(txBytes) {   
-//                if let error = response["error"]["message"].string {
-//                   DispatchQueue.main.async {
-//                       self.onUpdateWithSimul(nil, error)
-//                   }
-//                   return
-//               }
-//
-//                let computationCost = NSDecimalNumber(string: response["result"]["effects"]["gasUsed"]["computationCost"].stringValue)
-//                let storageCost = NSDecimalNumber(string: response["result"]["effects"]["gasUsed"]["storageCost"].stringValue)
-//                let storageRebate = NSDecimalNumber(string: response["result"]["effects"]["gasUsed"]["storageRebate"].stringValue)
-//                
-//                var gasCost: UInt64 = 0
-//                if (storageCost.compare(storageRebate).rawValue > 0) {
-//                    gasCost = computationCost.adding(storageCost).subtracting(storageRebate).multiplying(by: NSDecimalNumber(string: "1.3") , withBehavior: handler0Down).uint64Value
-//                } else {
-//                    gasCost = computationCost.multiplying(by: NSDecimalNumber(string: "1.3") , withBehavior: handler0Down).uint64Value
-//                }
-//                DispatchQueue.main.async {
-//                    self.onUpdateWithSimul(gasCost)
-//                }
-//                
-//            } else {
-//                DispatchQueue.main.async {
-//                    self.onUpdateWithSimul(nil)
-//                }
-//            }
+            if let txBytes = try await suiFetcher.buildSendRequest(toAddress, toAmount.stringValue, toSendDenom, toSendDenom == SUI_MAIN_DENOM ? nil : suiInputs()),
+               let response = try await suiFetcher.suiDryrun(txBytes) {
+                if (!response.status.success) {
+                    DispatchQueue.main.async {
+                        self.onUpdateWithSimul(nil, response.status.error.description_p)
+                    }
+                    return
+                }
+                
+                let computationCost = NSDecimalNumber(value: response.gasUsed.computationCost)
+                let storageCost = NSDecimalNumber(value: response.gasUsed.storageCost)
+                let storageRebate = NSDecimalNumber(value: response.gasUsed.storageRebate)
+                
+                var gasCost: UInt64 = 0
+                if (storageCost.compare(storageRebate).rawValue > 0) {
+                    gasCost = computationCost.adding(storageCost).subtracting(storageRebate).multiplying(by: NSDecimalNumber(string: "1.3") , withBehavior: handler0Down).uint64Value
+                } else {
+                    gasCost = computationCost.multiplying(by: NSDecimalNumber(string: "1.3") , withBehavior: handler0Down).uint64Value
+                }
+                DispatchQueue.main.async {
+                    self.onUpdateWithSimul(gasCost)
+                }
+                
+            } else {
+                DispatchQueue.main.async {
+                    self.onUpdateWithSimul(nil)
+                }
+            }
         }
     }
     
     func suiSend() {
         Task {
             do {
-//                if let txBytes = try await suiFetcher.unsafeCoinSend(toSendDenom, fromChain.mainAddress, suiInputs(), [toAddress], [toAmount.stringValue], suiFeeBudget.stringValue),
-//                   let dryRes = try await suiFetcher.suiDryrun(txBytes), dryRes["error"].isEmpty,
-//                   let broadRes = try await suiFetcher.suiExecuteTx(txBytes, Signer.moveSignatures(fromChain, txBytes), nil) {
-//                    
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(1000), execute: {
-//                        self.loadingView.isHidden = true
-//                        let txResult = CommonTransferResult(nibName: "CommonTransferResult", bundle: nil)
-//                        txResult.txStyle = self.txStyle
-//                        txResult.fromChain = self.fromChain
-//                        txResult.toChain = self.toChain
-//                        txResult.toAddress = self.toAddress
-//                        txResult.suiResult = broadRes
-//                        txResult.modalPresentationStyle = .fullScreen
-//                        self.present(txResult, animated: true)
-//                    })
-//                }
+                if let txBytes = try await suiFetcher.buildSendRequest(toAddress, toAmount.stringValue, toSendDenom, toSendDenom == SUI_MAIN_DENOM ? nil : suiInputs()),
+                   let dryRes = try await suiFetcher.suiDryrun(txBytes), dryRes.status.hasError == false,
+                    let broadRes = try await suiFetcher.suiExecuteTx(txBytes, Signer.moveSignatures(fromChain, txBytes), nil) {
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(1000), execute: {
+                        self.loadingView.isHidden = true
+                        let txResult = CommonTransferResult(nibName: "CommonTransferResult", bundle: nil)
+                        txResult.txStyle = self.txStyle
+                        txResult.fromChain = self.fromChain
+                        txResult.toChain = self.toChain
+                        txResult.toAddress = self.toAddress
+                        txResult.suiResult = broadRes
+                        txResult.modalPresentationStyle = .fullScreen
+                        self.present(txResult, animated: true)
+                    })
+                }
                 
             } catch {
                 //TODO handle Error
@@ -1536,14 +1536,8 @@ extension CommonTransfer {
         }
     }
     
-    func suiInputs() -> [String] {
-        var result = [String]()
-//        suiFetcher.suiObjects.forEach { object in
-//            if (object["type"].stringValue.suiCoinType() == toSendDenom) {
-//                result.append(object["objectId"].stringValue)
-//            }
-//        }
-        return result
+    func suiInputs() -> [Sui_Rpc_V2_Object] {
+        return suiFetcher.suiObjects.filter { $0.objectType.suiCoinType() == toSendDenom }
     }
     
 }
