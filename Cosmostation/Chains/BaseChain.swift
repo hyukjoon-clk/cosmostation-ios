@@ -242,9 +242,6 @@ class BaseChain {
             } else if let chainInitia = self as? ChainInitia  {
                 _ = await chainInitia.getInitiaFetcher()?.fetchCosmosValidators()
                 
-            } else if let chainZenrock = self as? ChainZenrock {
-                _ = await chainZenrock.getZenrockFetcher()?.fetchCosmosValidators()
-
             } else if (supportCosmos == true && isStakeEnabled() == true) {
                 _ = await getCosmosfetcher()?.fetchCosmosValidators()
             }

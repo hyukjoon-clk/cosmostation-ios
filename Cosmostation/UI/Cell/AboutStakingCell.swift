@@ -45,13 +45,7 @@ class AboutStakingCell: UITableViewCell {
             stakingDenomLabel.text = symbol
         }
         
-        if chain is ChainZenrock {
-            let unbondingSec = json["params"]["staking_params"]["Params"]["unbonding_time"].stringValue.filter({ $0.isNumber })
-            if let time = UInt64(unbondingSec) {
-                let unbondingDay = UInt16(time / 24 / 60 / 60)
-                unbondingTimeLabel.text = String(unbondingDay) + " " + NSLocalizedString("str_days", comment: "")
-            }
-        } else if chain is ChainBabylon_T {
+        if chain is ChainBabylon_T {
             let unbondingSec = json["params"]["staking_params"]["params"]["unbonding_time"].stringValue.filter({ $0.isNumber })
             if let time = UInt64(unbondingSec) {
                 let unbondingHours = UInt16(time / 60 / 60)

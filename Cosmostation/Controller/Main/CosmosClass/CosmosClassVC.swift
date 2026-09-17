@@ -595,11 +595,6 @@ extension CosmosClassVC {
                 return true
             }
             
-        } else if let zenrockFetcher = (selectedChain as? ChainZenrock)?.getZenrockFetcher() {
-            if zenrockFetcher.validators.count <= 0 {
-                return true
-            }
-            
         } else if let cosmosFetcher = selectedChain.getCosmosfetcher() {
             if (cosmosFetcher.cosmosValidators.count <= 0) {
                 return true
