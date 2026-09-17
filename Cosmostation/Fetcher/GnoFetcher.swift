@@ -17,6 +17,7 @@ class GnoFetcher {
     var gnoAccountNumber: UInt64?
     var gnoSequenceNum: UInt64?
     var gnoBalances: [Cosmos_Base_V1beta1_Coin]?
+    var gnoVestings: [Cosmos_Base_V1beta1_Coin]?
     
     var mintscanGrc20Tokens = [MintscanToken]()
 
@@ -148,6 +149,28 @@ extension GnoFetcher {
         var result =  NSDecimalNumber.zero
         gnoBalances?.forEach { balance in
             result = result.adding(balanceValue(balance.denom, usd))
+        }
+        return result
+    }
+    
+    func vestingAmount(_ denom: String) -> NSDecimalNumber {
+        return NSDecimalNumber(string: gnoVestings?.filter { $0.denom == denom }.first?.amount ?? "0")
+    }
+    
+    func vestingValue(_ denom: String, _ usd: Bool? = false) -> NSDecimalNumber {
+        let amount = vestingAmount(denom)
+        if (amount == NSDecimalNumber.zero) { return NSDecimalNumber.zero }
+        if let msAsset = BaseData.instance.getAsset(chain.apiName, denom) {
+            let msPrice = BaseData.instance.getPrice(msAsset.coinGeckoId, usd)
+            return msPrice.multiplying(by: amount).multiplying(byPowerOf10: -msAsset.decimals!, withBehavior: handler6)
+        }
+        return NSDecimalNumber.zero
+    }
+    
+    func vestingValueSum(_ usd: Bool? = false) -> NSDecimalNumber {
+        var result =  NSDecimalNumber.zero
+        gnoVestings?.forEach { vesting in
+            result = result.adding(vestingValue(vesting.denom, usd))
         }
         return result
     }

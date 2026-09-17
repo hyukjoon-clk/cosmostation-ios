@@ -29,7 +29,7 @@ class ChainGno: BaseChain  {
         supportStaking = false
         grpcHost = ""
         lcdUrl = ""
-        rpcUrl = ""
+        rpcUrl = "https://rpc.onbloc.xyz:443"
     }
     
     func getGnoFetcher() -> GnoFetcher? {
