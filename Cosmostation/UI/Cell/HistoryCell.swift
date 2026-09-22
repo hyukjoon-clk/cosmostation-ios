@@ -481,5 +481,81 @@ class HistoryCell: UITableViewCell {
             }
         }
     }
+    
+    func bindGnoHistory(_ chain: BaseChain, _ history: JSON) {
+        let success = history["success"].boolValue
+        successImg.image = UIImage(named: success ? "iconSuccess" : "iconFail")
+
+        let messages = history["messages"].arrayValue
+        var title = ""
+        var description = ""
+        amountLabel.isHidden = true
+        denomLabel.isHidden = true
+
+        if let value = messages.first?["value"] {
+            let typeName = value["__typename"].stringValue
+            description = messages.count > 1 ? typeName + " + " + String(messages.count - 1) : typeName
+
+            if (typeName == "BankMsgSend") {
+                title = (value["from_address"].stringValue == chain.bechAddress)
+                    ? NSLocalizedString("tx_send", comment: "")
+                    : NSLocalizedString("tx_receive", comment: "")
+
+                let (amount, denom) = value["amount"].stringValue.gnoAmountAndDenom()
+                if let msAsset = BaseData.instance.getAsset(chain.apiName, denom) {
+                    let dpAmount = NSDecimalNumber(string: amount).multiplying(byPowerOf10: -msAsset.decimals!, withBehavior: handler6)
+                    amountLabel.attributedText = WDP.dpAmount(dpAmount.stringValue, amountLabel!.font, 6)
+                    denomLabel.text = msAsset.symbol
+                    amountLabel.isHidden = false
+                    denomLabel.isHidden = false
+                }
+
+            } else if (typeName == "MsgCall") {
+                let function = value["func"].stringValue
+                let args = value["args"].arrayValue
+
+                if (function.lowercased() == "transfer" && args.count >= 1) {
+                    title = (value["caller"].stringValue == chain.bechAddress)
+                        ? NSLocalizedString("tx_send", comment: "")
+                        : NSLocalizedString("tx_receive", comment: "")
+
+                    let pkgPath = value["pkg_path"].stringValue
+                    if let token = (chain as? ChainGno)?.getGnoFetcher()?.mintscanGrc20Tokens.filter({ $0.address == pkgPath }).first,
+                       let decimals = token.decimals {
+                        let amountArg = args.count >= 2 ? args[1].stringValue : "0"
+                        let dpAmount = NSDecimalNumber(string: amountArg).multiplying(byPowerOf10: -decimals, withBehavior: handler6)
+                        amountLabel.attributedText = WDP.dpAmount(dpAmount.stringValue, amountLabel!.font, 6)
+                        denomLabel.text = token.symbol
+                        amountLabel.isHidden = false
+                        denomLabel.isHidden = false
+                    }
+
+                } else {
+                    title = function.lowercased().contains("swap")
+                        ? NSLocalizedString("title_swap_token", comment: "")
+                        : (function.isEmpty ? "Contract Call" : function)
+                }
+
+            } else if (typeName == "MsgAddPackage") {
+                title = "Deploy Package"
+
+            } else if (typeName == "MsgRun") {
+                title = "Run"
+            }
+        }
+
+        msgsTitleLabel.text = title.isEmpty ? (description.isEmpty ? "Transaction" : description) : title
+        msgsTitleLabel.adjustsFontSizeToFitWidth = true
+        hashLabel.text = history["hash"].stringValue
+
+        if (success) {
+            timeLabel.text = WDP.dpTime(history["time"].string)
+            blockLabel.text = "(" + history["block_height"].stringValue + ")"
+            blockLabel.isHidden = false
+        } else {
+            timeLabel.text = ""
+            blockLabel.isHidden = true
+        }
+    }
 
 }

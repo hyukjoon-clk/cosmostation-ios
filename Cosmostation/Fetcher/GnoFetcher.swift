@@ -18,6 +18,7 @@ class GnoFetcher {
     var gnoSequenceNum: UInt64?
     var gnoBalances: [Cosmos_Base_V1beta1_Coin]?
     var gnoVestings: [Cosmos_Base_V1beta1_Coin]?
+    var gnoHistory = [JSON]()
     
     var mintscanGrc20Tokens = [MintscanToken]()
 
@@ -63,6 +64,22 @@ class GnoFetcher {
             return false
         }
         
+    }
+    
+    func fetchGnoHistory() async {
+        gnoHistory.removeAll()
+
+        guard var result = try? await fetchHistory(chain.bechAddress!) else { return }
+
+        let heights = Array(Set(result.compactMap { $0["block_height"].int64 }))
+        if (heights.isEmpty == false), let timeMap = try? await fetchBlockTimes(heights) {
+            for i in 0..<result.count {
+                if let height = result[i]["block_height"].int64, let time = timeMap[height] {
+                    result[i]["time"] = JSON(time)
+                }
+            }
+        }
+        gnoHistory = result
     }
 
     func denomValue(_ denom: String, _ usd: Bool? = false) -> NSDecimalNumber {
@@ -240,6 +257,26 @@ extension GnoFetcher {
         }
     }
     
+    func fetchHistory(_ address: String) async throws -> [JSON] {
+        let parameters: Parameters = ["query": GNO_HISTORY_QUERY, "variables": ["addr": address]]
+        let response = try await AF.request(getIndexer(), method: .post, parameters: parameters, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value
+        return response["data"]["getTransactions"].arrayValue
+    }
+
+    func fetchBlockTimes(_ heights: [Int64]) async throws -> [Int64: String] {
+        let filters: [[String: Any]] = heights.map { ["height": ["eq": $0]] }
+        let parameters: Parameters = ["query": GNO_BLOCK_TIME_QUERY, "variables": ["heights": filters]]
+        let response = try await AF.request(getIndexer(), method: .post, parameters: parameters, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value
+
+        var result = [Int64: String]()
+        response["data"]["getBlocks"].arrayValue.forEach { block in
+            if let height = block["height"].int64 {
+                result[height] = block["time"].stringValue
+            }
+        }
+        return result
+    }
+    
     func simulateTx(_ simulTx: Tm2_Tx_Tx) async throws -> Tm2_Abci_ResponseDeliverTx? {
         let param: Parameters = ["jsonrpc":"2.0",
                                  "method": "abci_query",
@@ -320,6 +357,10 @@ extension GnoFetcher {
             return url + "/"
         }
         return url
+    }
+    
+    func getIndexer() -> String {
+        return (chain as? ChainGno)?.gnoIndexerUrl ?? ""
     }
 }
 
