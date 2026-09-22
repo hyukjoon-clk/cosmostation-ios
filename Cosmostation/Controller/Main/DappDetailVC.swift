@@ -723,13 +723,11 @@ extension DappDetailVC: WKScriptMessageHandler {
                 
             } else if (method == "sui_signTransactionBlock") || (method == "sui_signTransaction") {  // v1 || v2
                 let toSign = messageJSON["params"]
-                let hex = toSign["buildHexString"].stringValue
-                self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], Data(hex: hex).base64EncodedString())
+                self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], "")
 
             } else if (method == "sui_signAndExecuteTransactionBlock") || (method == "sui_signAndExecuteTransaction") {  // v1 || v2
                 let toSign = messageJSON["params"]
-                let hex = toSign["buildHexString"].stringValue
-                self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], Data(hex: hex).base64EncodedString())
+                self.popUpSuiRequestSign(method, toSign, bodyJSON["messageId"], "")
                 
             } else if (method == "sui_signMessage") || (method == "sui_signPersonalMessage") {  // v1 || v2
                 Task {

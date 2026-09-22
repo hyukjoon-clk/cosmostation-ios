@@ -161,39 +161,40 @@ class DappSuiSignRequestSheet: BaseVC {
         guard let suiFetcher = (selectedChain as? ChainSui)?.getSuiFetcher() else { return }
         
         do {
-            if let dryRes = try await suiFetcher.suiSimulate(bytes) {
-                if !dryRes.effects.status.success {
-                    print("fetching error: \(dryRes.effects.status.error.description_p)")
-                    DispatchQueue.main.async {
-                        self.dismissWithFail()
-                    }
-                    return
-                }
-                
-                suiFeeBudget = {
-                    let gasUsed = dryRes.effects.gasUsed
-                    let storageCost = Int(gasUsed.storageCost) - Int(gasUsed.storageRebate)
-                    let cost = Int(gasUsed.computationCost) + (storageCost > 0 ? storageCost : 0)
-                    return NSDecimalNumber(value: cost)
-                }()
-                
-                onUpdateFeeView()
-                
-                let gasPayment = dryRes.transaction.gasPayment
-                let payment: [[String: Any]] = gasPayment.objects.map { object in
-                    return ["objectId": object.objectID, "version": String(object.version), "digest": object.digest]
-                }
-                displayToSign!["gasData"] = JSON(["budget": String(gasPayment.budget),
-                                                  "price": String(gasPayment.price),
-                                                  "owner": gasPayment.owner,
-                                                  "payment": payment])
+            var txSerialized = JSON(parseJSON: requestToSign!["transactionBlockSerialized"].stringValue)
+
+            guard let resolved = try await suiFetcher.suiResolveTransaction(txSerialized, selectedChain.mainAddress) else {
+                DispatchQueue.main.async { self.dismissWithFail() }
+                return
             }
-            
+
+            if (!resolved.effects.status.success) {
+                print("fetching error: \(resolved.effects.status.error.description_p)")
+                DispatchQueue.main.async { self.dismissWithFail() }
+                return
+            }
+
+            bytes = resolved.transaction.bcs.value.base64EncodedString()
+
+            let gasUsed = resolved.effects.gasUsed
+            let storageCost = Int(gasUsed.storageCost) - Int(gasUsed.storageRebate)
+            suiFeeBudget = NSDecimalNumber(value: Int(gasUsed.computationCost) + (storageCost > 0 ? storageCost : 0))
+            onUpdateFeeView()
+
+            let gasPayment = resolved.transaction.gasPayment
+            let payment: [[String: Any]] = gasPayment.objects.map { object in
+                return ["objectId": object.objectID, "version": String(object.version), "digest": object.digest]
+            }
+            txSerialized["sender"] = JSON(selectedChain.mainAddress)
+            txSerialized["gasData"] = JSON(["budget": String(gasPayment.budget),
+                                            "price": String(gasPayment.price),
+                                            "owner": gasPayment.owner,
+                                            "payment": payment])
+            displayToSign = txSerialized
+
         } catch {
             print("fetching error: \(error)")
-            DispatchQueue.main.async {
-                self.dismissWithFail()
-            }
+            DispatchQueue.main.async { self.dismissWithFail() }
         }
     }
     
@@ -289,16 +290,25 @@ class DappSuiSignRequestSheet: BaseVC {
             webSignDelegate?.onAcceptInjection(data, requestToSign!, messageId!)
             
         } else if method == "sui_signAndExecuteTransaction" || method == "sui_signAndExecuteTransactionBlock" {
-//            guard let suiFetcher = (selectedChain as? ChainSui)?.getSuiFetcher() else { return }
-//            Task {
-//                let options = requestToSign!["options"]
-//                if let data = try await suiFetcher.suiExecuteTx(self.bytes, Signer.moveSignatures(selectedChain, bytes), options) {
-//                    webSignDelegate?.onAcceptInjection(data["result"], requestToSign!, messageId!)
-//                    
-//                } else {
-//                    webSignDelegate?.onCancleInjection("Fail suiExecuteTx request", requestToSign!, messageId!)
-//                }
-//            }
+            guard let suiFetcher = (selectedChain as? ChainSui)?.getSuiFetcher() else { return }
+               Task {
+                   do {
+                       let signatures = Signer.moveSignatures(selectedChain, bytes)
+                       guard let executed = try await suiFetcher.suiExecuteTx(bytes, signatures, nil),
+                             let rawTransaction = suiFetcher.suiRawTransaction(bytes, signatures) else {
+                           webSignDelegate?.onCancleInjection("Fail suiExecuteTx request", requestToSign!, messageId!)
+                           return
+                       }
+
+                       let data: JSON = ["digest": executed.digest,
+                                         "rawTransaction": rawTransaction,
+                                         "rawEffects": [UInt8](executed.effects.bcs.value)]
+                       webSignDelegate?.onAcceptInjection(data, requestToSign!, messageId!)
+
+                   } catch {
+                       webSignDelegate?.onCancleInjection("Fail suiExecuteTx request", requestToSign!, messageId!)
+                   }
+               }
             
         } else if (method == "sui_signMessage" || method == "sui_signPersonalMessage") {
             guard let messageBytes = requestToSign?["message"].stringValue else { return }

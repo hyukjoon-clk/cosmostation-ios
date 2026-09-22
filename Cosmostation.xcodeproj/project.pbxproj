@@ -1670,6 +1670,8 @@
 		1505030E2E49DF260001415A /* solana.js in Resources */ = {isa = PBXBuildFile; fileRef = 1505030D2E49DF250001415A /* solana.js */; };
 		1505030F2E49DF260001415A /* solana.js in Resources */ = {isa = PBXBuildFile; fileRef = 1505030D2E49DF250001415A /* solana.js */; };
 		150503112E5C7F890001415A /* SolanaJS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 150503102E5C7F890001415A /* SolanaJS.swift */; };
+		1515F1673062555D0041C523 /* SuiTransactionMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1515F1663062555D0041C523 /* SuiTransactionMapper.swift */; };
+		1515F1683062555D0041C523 /* SuiTransactionMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1515F1663062555D0041C523 /* SuiTransactionMapper.swift */; };
 		15199C612FE11989006954F0 /* ChainEmpower.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15199C602FE11989006954F0 /* ChainEmpower.swift */; };
 		15199C622FE11989006954F0 /* ChainEmpower.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15199C602FE11989006954F0 /* ChainEmpower.swift */; };
 		1528AA7F3053C138000E19A6 /* sui_rpc_v2_event.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1528AA5F3053C138000E19A6 /* sui_rpc_v2_event.pb.swift */; };
@@ -3462,6 +3464,7 @@
 		04FF6B972B21EB74009DCA89 /* RewardDetailCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RewardDetailCell.xib; sourceTree = "<group>"; };
 		1505030D2E49DF250001415A /* solana.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = solana.js; sourceTree = "<group>"; };
 		150503102E5C7F890001415A /* SolanaJS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolanaJS.swift; sourceTree = "<group>"; };
+		1515F1663062555D0041C523 /* SuiTransactionMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuiTransactionMapper.swift; sourceTree = "<group>"; };
 		15199C602FE11989006954F0 /* ChainEmpower.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChainEmpower.swift; sourceTree = "<group>"; };
 		1528AA563053C138000E19A6 /* sui_rpc_v2_argument.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sui_rpc_v2_argument.pb.swift; sourceTree = "<group>"; };
 		1528AA573053C138000E19A6 /* sui_rpc_v2_balance_change.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sui_rpc_v2_balance_change.pb.swift; sourceTree = "<group>"; };
@@ -6001,6 +6004,7 @@
 		E1945E3B222E7DF600A1436F /* Crypto */ = {
 			isa = PBXGroup;
 			children = (
+				1515F1663062555D0041C523 /* SuiTransactionMapper.swift */,
 				E1945E3D222E7E2900A1436F /* Bech32.swift */,
 				E1945E3C222E7E2900A1436F /* SegwitAddrCoder.swift */,
 				28CE973525872B7C006DEBEE /* Signer.swift */,
@@ -7630,6 +7634,7 @@
 				046652112DACDB2700F9C125 /* ibc_lightclients_wasm_v1_tx.pb.swift in Sources */,
 				046652122DACDB2700F9C125 /* ibc_applications_interchain_accounts_host_v1_query.pb.swift in Sources */,
 				046652132DACDB2700F9C125 /* ibc_applications_transfer_v1_tx.grpc.swift in Sources */,
+				1515F1673062555D0041C523 /* SuiTransactionMapper.swift in Sources */,
 				046652142DACDB2700F9C125 /* ibc_applications_transfer_v1_authz.pb.swift in Sources */,
 				046652152DACDB2700F9C125 /* ibc_applications_nft_transfer_v1_tx.pb.swift in Sources */,
 				046652162DACDB2700F9C125 /* ibc_applications_nft_transfer_v1_query.grpc.swift in Sources */,
@@ -8764,6 +8769,7 @@
 				E10B1DD62C2159040039283B /* KavaSwapAction.swift in Sources */,
 				042A17502AB97AD900EF31C9 /* RedFixCardView.swift in Sources */,
 				792613A12CD4B82800FAF47D /* initia_distribution_v1_distribution.pb.swift in Sources */,
+				1515F1683062555D0041C523 /* SuiTransactionMapper.swift in Sources */,
 				1528AAA83053D1EB000E19A6 /* google_rpc_status.pb.swift in Sources */,
 				79B7F35D2D8175C300AA755B /* ChainPaloma.swift in Sources */,
 				E1D4EA582871584B005C1ECF /* FeeInfo.swift in Sources */,

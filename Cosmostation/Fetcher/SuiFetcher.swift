@@ -449,21 +449,34 @@ extension SuiFetcher {
         return response.transaction
     }
     
-//    func suiRawTransaction(_ txBytes: String, _ signatures: [String]) -> String? {
-//        guard let txData = Data(base64Encoded: txBytes) else { return nil }
-//
-//        var result = Data([0x01])
-//        result += Data([0x00, 0x00, 0x00])
-//        result += txData
-//        result += Data([UInt8(signatures.count)])
-//        signatures.forEach { signature in
-//            if let signatureData = Data(base64Encoded: signature) {
-//                result += Data(Signer.encodeULEB128(signatureData.count))
-//                result += signatureData
-//            }
-//        }
-//        return result.base64EncodedString()
-//    }
+    func suiRawTransaction(_ txBytes: String, _ signatures: [String]) -> String? {
+        guard let txData = Data(base64Encoded: txBytes) else { return nil }
+
+        var result = Data([0x01])
+        result += Data([0x00, 0x00, 0x00])
+        result += txData
+        result += Data(Signer.encodeULEB128(signatures.count))
+        signatures.forEach { signature in
+            if let signatureData = Data(base64Encoded: signature) {
+                result += Data(Signer.encodeULEB128(signatureData.count))
+                result += signatureData
+            }
+        }
+        return result.base64EncodedString()
+    }
+    
+    func suiResolveTransaction(_ txJson: JSON, _ sender: String) async throws -> Sui_Rpc_V2_ExecutedTransaction? {
+        let req = Sui_Rpc_V2_SimulateTransactionRequest.with {
+            $0.transaction = Sui_Rpc_V2_Transaction.with {
+                $0.sender = sender
+                $0.kind = mapProgrammableTransactionKind(txJson)
+            }
+            $0.doGasSelection = true
+            $0.readMask = Google_Protobuf_FieldMask(protoPaths: ["transaction.effects", "transaction.transaction"])
+        }
+        let response = try await Sui_Rpc_V2_TransactionExecutionServiceNIOClient(channel: getClient()).simulateTransaction(req, callOptions: getCallOptions()).response.get()
+        return response.transaction
+    }
 }
 
 
