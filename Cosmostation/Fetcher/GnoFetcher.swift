@@ -27,31 +27,28 @@ class GnoFetcher {
     
     func fetchGnoBalances() async -> Bool {
         gnoBalances = [Cosmos_Base_V1beta1_Coin]()
-        if let _ = try? await fetchAuth(),
-           let balance = try? await fetchBalance() {
-            self.gnoBalances = balance
-        }
+        gnoVestings = nil
+        let _ = try? await fetchAuth()
         return true
     }
     
     func fetchGnoData(_ id: Int64) async -> Bool {
         mintscanGrc20Tokens.removeAll()
         gnoBalances = nil
+        
         do {
-            if let balance = try await fetchBalance(),
-               let _ = try? await fetchAuth() {
-                
+            if let _ = try? await fetchAuth() {
                 self.mintscanGrc20Tokens = BaseData.instance.mintscanGrc20Tokens?.filter({ $0.chainName == chain.apiName }).map { token in
                     return token.copy() as! MintscanToken
                 } ?? []
                 
-                self.gnoBalances = balance
                 let userDisplayGrc20token = BaseData.instance.getDisplayGrc20s(id, self.chain.tag)
                 await mintscanGrc20Tokens.concurrentForEach { grc20 in
                     if (userDisplayGrc20token == nil) {
                         if (grc20.wallet_preload == true) {
                             await self.fetchGrc20Balance(grc20)
                         }
+                        
                     } else {
                         if (userDisplayGrc20token?.contains(grc20.address!) == true) {
                             await self.fetchGrc20Balance(grc20)
@@ -69,7 +66,7 @@ class GnoFetcher {
     }
 
     func denomValue(_ denom: String, _ usd: Bool? = false) -> NSDecimalNumber {
-        return balanceValue(denom, usd)
+        return balanceValue(denom, usd).adding(vestingValue(denom, usd))
     }
     
     func allStakingDenomAmount() -> NSDecimalNumber {
@@ -77,7 +74,7 @@ class GnoFetcher {
     }
 
     func allCoinValue(_ usd: Bool? = false) -> NSDecimalNumber {
-        return balanceValueSum(usd)
+        return balanceValueSum(usd).adding(vestingValueSum(usd))
     }
     
     func valueCoinCnt() -> Int {
@@ -125,7 +122,6 @@ extension GnoFetcher {
                 let value = msPrice.multiplying(by: tokenInfo.getAmount()).multiplying(byPowerOf10: -tokenInfo.decimals!, withBehavior: handler6)
                 result = result.adding(value)
             }
-            
         }
         
         return result
@@ -178,10 +174,12 @@ extension GnoFetcher {
 
 
 extension GnoFetcher {
+    
     func fetchAuth() async throws {
         gnoPublicKey = nil
         gnoAccountNumber = nil
         gnoSequenceNum = nil
+        gnoVestings = nil
         
         let params: Parameters = ["jsonrpc":"2.0",
                                   "method": "abci_query",
@@ -190,36 +188,56 @@ extension GnoFetcher {
         let response = try await AF.request(getRpc(), method: .post, parameters: params, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value
         let encodedDataString = response["result"]["response"]["ResponseBase"]["Data"].stringValue
         let data = Data(base64Encoded: encodedDataString)
+        
         if String(data: data!, encoding: .utf8) == "null" {
+            gnoBalances = [Cosmos_Base_V1beta1_Coin.init(chain.stakeDenom, "0")]
             return
         }
+        
         let jsonData = try JSON(data: data!)
+        let accountData = jsonData["BaseAccount"]
         
-        if jsonData["BaseAccount"]["public_key"] != JSON.null {
-            gnoPublicKey = jsonData["BaseAccount"]["public_key"]["value"].stringValue
+        if accountData["public_key"] != JSON.null {
+            gnoPublicKey = accountData["public_key"]["value"].stringValue
         }
-        gnoAccountNumber = UInt64(jsonData["BaseAccount"]["account_number"].stringValue)
-        gnoSequenceNum = UInt64(jsonData["BaseAccount"]["sequence"].stringValue)
-    }
-    
-    func fetchBalance() async throws -> [Cosmos_Base_V1beta1_Coin]? {
-        let params: Parameters = ["jsonrpc":"2.0",
-                                  "method": "abci_query",
-                                  "params": ["bank/balances/\(chain.bechAddress!)", "", "0", false],
-                                  "id": 1]
-        let response = try await AF.request(getRpc(), method: .post, parameters: params, encoding: JSONEncoding.default).serializingDecodable(JSON.self).value
-        let encodedDataString = response["result"]["response"]["ResponseBase"]["Data"].stringValue
+        gnoAccountNumber = UInt64(accountData["account_number"].stringValue)
+        gnoSequenceNum = UInt64(accountData["sequence"].stringValue)
         
-        let data = Data(base64Encoded: encodedDataString)
-        let coins = String(data: data!, encoding: .utf8) ?? ""
-        if coins.isEmpty {
-            return []
+        if accountData["vesting"] != JSON.null {
+            let vestingData = accountData["vesting"]
+            let (originalVestingAmount, vestingDenom) = vestingData["original_vesting"].stringValue.gnoAmountAndDenom()
+            let startTime = Int64(vestingData["start_time"].stringValue) ?? 0
+            let endTime = Int64(vestingData["end_time"].stringValue) ?? 0
+            let now = Int64(Date().timeIntervalSince1970)
+            
+            let duration = max(endTime - startTime, 1)
+            let elapsed = min(max(now - startTime, 0), duration)
+            
+            let originalVesting = NSDecimalNumber(string: originalVestingAmount)
+            let vested = originalVesting.multiplying(by: NSDecimalNumber(value: elapsed))
+                .dividing(by: NSDecimalNumber(value: duration), withBehavior: handler0Down)
+            var locked = originalVesting.subtracting(vested)
+            if (locked.compare(NSDecimalNumber.zero) == .orderedAscending) { locked = NSDecimalNumber.zero }
+            
+            let (totalBalanceAmount, balanceDenom) = accountData["coins"].stringValue.gnoAmountAndDenom()
+            let total = NSDecimalNumber(string: totalBalanceAmount)
+            var spendable = total.subtracting(locked)
+            if (spendable.compare(NSDecimalNumber.zero) == .orderedAscending) { spendable = NSDecimalNumber.zero }
+            
+            let denom = balanceDenom.isEmpty ? vestingDenom : balanceDenom
+            gnoBalances = [Cosmos_Base_V1beta1_Coin.init(denom, spendable.stringValue)]
+            gnoVestings = [Cosmos_Base_V1beta1_Coin.init(vestingDenom, locked.stringValue)]
+            
+        } else {
+            let coins = accountData["coins"].stringValue
+            if (coins.isEmpty) {
+                gnoBalances = [Cosmos_Base_V1beta1_Coin.init(chain.stakeDenom, "0")]
+                gnoVestings = [Cosmos_Base_V1beta1_Coin.init(chain.stakeDenom, "0")]
+            } else {
+                let (amount, denom) = coins.gnoAmountAndDenom()
+                gnoBalances = [Cosmos_Base_V1beta1_Coin.init(denom, amount)]
+            }
         }
-        
-        let amount = coins.filter { $0.isNumber }
-        let denom = coins.filter { !$0.isNumber }.trimmingCharacters(in: ["\""])
-        
-        return [Cosmos_Base_V1beta1_Coin.init(denom, amount)]
     }
     
     func simulateTx(_ simulTx: Tm2_Tx_Tx) async throws -> Tm2_Abci_ResponseDeliverTx? {
@@ -302,5 +320,14 @@ extension GnoFetcher {
             return url + "/"
         }
         return url
+    }
+}
+
+extension String {
+    
+    func gnoAmountAndDenom() -> (amount: String, denom: String) {
+        let amount = self.filter { $0.isNumber }
+        let denom = self.filter { !$0.isNumber }.trimmingCharacters(in: ["\"", " "])
+        return (amount.isEmpty ? "0" : amount, denom)
     }
 }

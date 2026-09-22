@@ -345,4 +345,46 @@ class AssetCosmosClassCell: UITableViewCell {
             }
         }
     }
+    
+    func bindGnoClassAsset(_ baseChain: BaseChain, _ coin: Cosmos_Base_V1beta1_Coin) {
+        if let gnoFether = (baseChain as? ChainGno)?.getGnoFetcher(),
+           let msAsset = BaseData.instance.getAsset(baseChain.apiName, coin.denom) {
+            let value = gnoFether.denomValue(coin.denom)
+            
+            coinImg.sd_setImage(with: msAsset.assetImg(), placeholderImage: UIImage(named: "tokenDefault"))
+            symbolLabel.text = msAsset.symbol?.uppercased()
+            
+            WDP.dpPrice(msAsset, priceCurrencyLabel, priceLabel)
+            WDP.dpPriceChanged(msAsset, priceChangeLabel, priceChangePercentLabel)
+            if (BaseData.instance.getHideValue()) {
+                hidenValueLabel.isHidden = false
+            } else {
+                WDP.dpValue(value, valueCurrencyLabel, valueLabel)
+                amountLabel.isHidden = false
+                valueCurrencyLabel.isHidden = false
+                valueLabel.isHidden = false
+            }
+            
+            let availableAmount = gnoFether.balanceAmount(coin.denom).multiplying(byPowerOf10: -msAsset.decimals!)
+            availableLabel?.attributedText = WDP.dpAmount(availableAmount.stringValue, availableLabel!.font, 6)
+            
+            let vestingAmount = gnoFether.vestingAmount(coin.denom).multiplying(byPowerOf10: -msAsset.decimals!)
+            if (vestingAmount != NSDecimalNumber.zero) {
+                vestingLayer.isHidden = false
+                vestingLabel?.attributedText = WDP.dpAmount(vestingAmount.stringValue, vestingLabel!.font, 6)
+            }
+            
+            stakingLayer.isHidden = true
+            unstakingLayer.isHidden = true
+            rewardLayer.isHidden = true
+            
+            let totalAmount = availableAmount.adding(vestingAmount)
+            amountLabel?.attributedText = WDP.dpAmount(totalAmount.stringValue, amountLabel!.font, 6)
+            
+            if (BaseData.instance.getHideValue()) {
+                availableLabel.text = "✱✱✱✱"
+                vestingLabel.text = "✱✱✱✱"
+            }
+        }
+    }
 }
